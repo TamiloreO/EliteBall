@@ -1,4 +1,4 @@
-# touchline
+# EliteBall
 
 A match simulator you can watch. Give it two squads of assessed values and two sets of tactics, and it plays out ninety minutes as a 2D map with a scoreline, shot counts and expected goals that hold together. The same seed always produces the same match.
 
@@ -13,8 +13,8 @@ Because the match is generated rather than recorded, it gives you things a real 
 ## Run it
 
 ```bash
-git clone https://github.com/TamiloreO/touchline.git
-cd touchline
+git clone https://github.com/TamiloreO/EliteBall.git
+cd EliteBall
 python3 -m http.server 8000
 ```
 

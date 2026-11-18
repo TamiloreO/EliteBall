@@ -7,50 +7,65 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <header class="masthead">
-      <div>
-        <h1>touchline</h1>
-        <p class="kicker">A match simulator driven by assessed player values and team tactics</p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark"></span>
+        <span class="wordmark">touchline</span>
+        <span class="tagline">match simulator</span>
       </div>
       <div class="controls">
-        <label>Seed <input id="seed" type="number" min="1" max="9999" value="7" /></label>
+        <label for="seed">Seed</label>
+        <input id="seed" type="number" min="1" max="9999" value="7" />
         <button id="simulate" class="primary">Simulate match</button>
       </div>
     </header>
 
     <main>
-      <section class="scoreboard">
-        <div class="team home">
-          <span class="swatch home"></span>
-          <span id="home-name">Rovers</span>
-          <span class="formation" id="home-formation">4-3-3</span>
+      <section class="scoreline" aria-label="Score">
+        <div class="side home">
+          <span class="dot"></span>
+          <span class="name" id="home-name">Rovers</span>
+          <span class="form" id="home-formation">4-3-3</span>
         </div>
-        <div class="score"><span id="home-score">0</span><span class="dash">:</span><span id="away-score">0</span></div>
-        <div class="team away">
-          <span class="formation" id="away-formation">4-4-2</span>
-          <span id="away-name">Athletic</span>
-          <span class="swatch away"></span>
+        <div class="score">
+          <span id="home-score">0</span><span class="colon">:</span><span id="away-score">0</span>
+        </div>
+        <div class="side away">
+          <span class="form" id="away-formation">4-4-2</span>
+          <span class="name" id="away-name">Athletic</span>
+          <span class="dot"></span>
         </div>
       </section>
 
-      <section class="stage">
-        <canvas id="pitch" width="960" height="620" aria-label="Match map"></canvas>
-        <div class="clock"><span id="clock">00:00</span><span class="clock-label">match time</span></div>
+      <section class="stadium" aria-label="Match map">
+        <span class="pylon p1"></span>
+        <span class="pylon p2"></span>
+        <span class="pylon p3"></span>
+        <span class="pylon p4"></span>
+        <div class="bowl">
+          <div class="pitch-frame">
+            <canvas id="pitch" width="960" height="620" aria-label="Players and ball on the pitch"></canvas>
+            <div class="clock"><span id="clock">00:00</span><span class="clock-label">match time</span></div>
+            <div class="board">TOUCHLINE</div>
+          </div>
+        </div>
       </section>
 
       <section class="transport">
         <button id="play" class="primary">Pause</button>
-        <input id="scrub" type="range" min="0" max="1000" value="0" />
+        <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Match position" />
         <div class="speeds" role="group" aria-label="Playback speed">
-          <button data-speed="1" class="speed active">1x</button>
+          <button data-speed="1" class="speed">1x</button>
           <button data-speed="2" class="speed">2x</button>
-          <button data-speed="4" class="speed">4x</button>
+          <button data-speed="4" class="speed active">4x</button>
         </div>
       </section>
 
+      <section class="facts" id="facts" aria-label="Match facts"></section>
+
       <section class="panels">
         <div class="panel">
-          <h2>Match totals <span class="tag">full time</span></h2>
+          <h2>Match totals <span class="hint">full time</span></h2>
           <table class="stats">
             <thead><tr><th>Rovers</th><th></th><th>Athletic</th></tr></thead>
             <tbody id="stats-body"></tbody>
@@ -58,7 +73,7 @@
           <p class="fine">Totals cover the full match; the map replays it from the seed.</p>
         </div>
         <div class="panel">
-          <h2>Team sheets <span class="tag">assessed values</span></h2>
+          <h2>Squads <span class="hint">jersey numbers and initials</span></h2>
           <div class="sheets">
             <ol id="home-sheet" class="sheet"></ol>
             <ol id="away-sheet" class="sheet"></ol>
@@ -66,16 +81,16 @@
         </div>
       </section>
 
-      <section class="panel notes">
-        <h2>Model</h2>
+      <section class="panel model">
+        <h2>The model</h2>
         <p>
           Every player carries ability values from 1 to 99 plus a condition line: fitness, sharpness, morale and the
           distraction a rumour adds. Possessions resolve into passes, carries and shots at rates set by those values and
-          by team tactics, and each shot is worth an expected-goals figure. The same seed always plays the same match.
+          by team tactics, and every shot is worth an expected-goals figure. The same seed always plays the same match.
         </p>
         <p class="fine">
-          Squads are invented, and the match is a stylised model rather than a calibrated forecast. Load your own
-          licensed data locally; nothing third-party ships in this repository.
+          Squads are invented and shown by jersey number and initials. The match is a stylised model, not a calibrated
+          forecast, and no third-party data ships in this repository.
         </p>
       </section>
     </main>

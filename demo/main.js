@@ -17,18 +17,19 @@ const ui = {
   seed: document.getElementById("seed"),
   simulate: document.getElementById("simulate"),
   statsBody: document.getElementById("stats-body"),
+  facts: document.getElementById("facts"),
   homeSheet: document.getElementById("home-sheet"),
   awaySheet: document.getElementById("away-sheet"),
 };
 
-const COLORS = { home: "#f59e0b", away: "#3b82f6" };
+const COLORS = { home: "#f08a2c", away: "#4f8df7" };
 const MARGIN = 4;
 const view = { scale: 1, ox: 0, oy: 0 };
 
 let match = null;
 let frame = 0;
 let playing = true;
-let speed = 8;
+let speed = 4;
 let lastTime = 0;
 
 function initials(name) {
@@ -176,24 +177,41 @@ function updateHud() {
   ui.clock.textContent = formatClock(seconds);
   ui.scrub.value = String(Math.round((frame / (match.frames.length - 1)) * 1000));
 
-  // The score at this point in the match, not the final score.
-  let home = 0;
-  let away = 0;
-  for (const event of match.events) {
-    if (event.type !== "goal") continue;
-    if (event.t < seconds) {
-      if (event.side === "home") home += 1;
-      else away += 1;
-    }
-  }
-  ui.homeScore.textContent = String(home);
-  ui.awayScore.textContent = String(away);
 }
 
 function statsRow(label, home, away) {
   const tr = document.createElement("tr");
   tr.innerHTML = `<td>${home}</td><td>${label}</td><td>${away}</td>`;
   return tr;
+}
+
+function renderFacts() {
+  const { home, away } = match.stats;
+  const tiles = [
+    { label: "Result", value: `${home.goals}<span class="sep">:</span>${away.goals}`, sub: "full time" },
+    { label: "Expected goals", value: `${home.xg.toFixed(2)}<span class="sep">:</span>${away.xg.toFixed(2)}`, sub: "chance quality" },
+    { label: "Shots", value: `${home.shots}<span class="sep">:</span>${away.shots}`, sub: "attempts at goal" },
+    {
+      label: "Possession",
+      value: `${home.possession.toFixed(1)}%<span class="sep">:</span>${away.possession.toFixed(1)}%`,
+      sub: "share of the ball",
+      split: true,
+    },
+  ];
+
+  ui.facts.replaceChildren(
+    ...tiles.map((tile) => {
+      const div = document.createElement("div");
+      div.className = "fact";
+      div.innerHTML = `
+        <span class="label">${tile.label}</span>
+        <span class="value">${tile.value}</span>
+        <span class="sub">${tile.sub}</span>
+        ${tile.split ? `<span class="split"><span class="h" style="width:${home.possession}%"></span><span class="a" style="width:${away.possession}%"></span></span>` : ""}
+      `;
+      return div;
+    }),
+  );
 }
 
 function renderStats() {
@@ -219,7 +237,7 @@ function sheet(list, players) {
     const moraleColour = morale > 0.15 ? "#2f7d32" : morale < -0.15 ? "#b3261e" : "#8a8f83";
 
     li.innerHTML = `
-      <span class="num">${player.num}</span>
+      <span class="jersey">${player.num}</span>
       <span class="who"><span class="initials">${initials(player.name)}</span><span class="role">${player.role}</span></span>
       <span class="bars">
         <span class="bar" title="Fitness ${fitness}%"><span style="width:${fitness}%"></span></span>
@@ -242,12 +260,15 @@ function boot() {
   playing = true;
   ui.play.textContent = "Pause";
 
+  ui.homeScore.textContent = String(match.score.home);
+  ui.awayScore.textContent = String(match.score.away);
   ui.homeName.textContent = home.name;
   ui.awayName.textContent = away.name;
   ui.homeFormation.textContent = home.formation;
   ui.awayFormation.textContent = away.formation;
 
   renderStats();
+  renderFacts();
   sheet(ui.homeSheet, match.players.filter((p) => p.side === "home"));
   sheet(ui.awaySheet, match.players.filter((p) => p.side === "away"));
   drawFrame();

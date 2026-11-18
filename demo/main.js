@@ -21,6 +21,7 @@ const ui = {
   awayCol: document.getElementById("away-col"),
   finePrint: document.getElementById("fine-print"),
   facts: document.getElementById("facts"),
+  goals: document.getElementById("goals"),
   homeSheet: document.getElementById("home-sheet"),
   awaySheet: document.getElementById("away-sheet"),
 };
@@ -204,6 +205,42 @@ function statsRow(label, home, away) {
   return tr;
 }
 
+function renderGoals() {
+  const goals = match.events.filter((event) => event.type === "goal");
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = goals.length ? `Goals ${goals.length}` : "Goals";
+  const items = [label];
+
+  if (!goals.length) {
+    const none = document.createElement("span");
+    none.className = "none";
+    none.textContent = "No goals";
+    items.push(none);
+  }
+
+  for (const goal of goals) {
+    const player = match.players.find((p) => p.side === goal.side && p.num === goal.player);
+    const minute = Math.floor(goal.t / 60);
+    const chip = document.createElement("button");
+    chip.className = `goal-chip ${goal.side}`;
+    chip.innerHTML = `<span class="minute">${minute}'</span><span class="num">${goal.player}</span><span class="who">${player ? initials(player.name) : ""}</span>`;
+    chip.title = `Jump to ${minute}:${String(Math.floor(goal.t % 60)).padStart(2, "0")}`;
+    chip.addEventListener("click", () => {
+      frame = Math.min(goal.t * match.frameRate, match.frames.length - 1);
+      playing = false;
+      ui.play.textContent = "Play";
+      for (const other of ui.goals.querySelectorAll(".goal-chip")) other.classList.remove("active");
+      chip.classList.add("active");
+      drawFrame();
+      updateHud();
+    });
+    items.push(chip);
+  }
+
+  ui.goals.replaceChildren(...items);
+}
+
 function renderFacts() {
   const { home, away } = match.stats;
   const tiles = [
@@ -313,6 +350,7 @@ function boot() {
 
   renderStats();
   renderFacts();
+  renderGoals();
   sheet(ui.homeSheet, match.players.filter((p) => p.side === "home"));
   sheet(ui.awaySheet, match.players.filter((p) => p.side === "away"));
   drawFrame();

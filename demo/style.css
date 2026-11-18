@@ -152,6 +152,25 @@ canvas { display: block; width: 100%; height: auto; }
 .speed { padding: 6px 9px; font-family: var(--mono); letter-spacing: 0; }
 .speed.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
+.goals { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.goals .label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--muted); margin-right: 4px;
+}
+.goal-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--home);
+  border-radius: 3px; padding: 5px 9px; font-size: 11px; cursor: pointer;
+}
+.goal-chip.away { border-left-color: var(--away); }
+.goal-chip .minute { font-family: var(--mono); font-weight: 700; }
+.goal-chip .num { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.goal-chip .who { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+.goal-chip:hover { border-color: var(--muted); }
+.goal-chip.active { background: var(--ink); border-color: var(--ink); }
+.goal-chip.active .minute, .goal-chip.active .num, .goal-chip.active .who { color: #fff; }
+.goals .none { font-size: 11px; color: var(--muted); }
+
 .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
 .fact {
   background: var(--card); border: 1px solid var(--line); border-radius: 6px;

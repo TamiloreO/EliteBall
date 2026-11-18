@@ -177,8 +177,20 @@ function drawFrame() {
     }
   }
 
-  const bx = px(mix(a[0], b[0]));
-  const by = py(mix(a[1], b[1]));
+  const seconds = frame / match.frameRate;
+  const recent = match.events.find(
+    (event) => event.type === "goal" && seconds >= event.t && seconds <= event.t + 1.6,
+  );
+
+  let ballX = mix(a[0], b[0]);
+  let ballY = mix(a[1], b[1]);
+  if (recent) {
+    ballX = recent.side === "home" ? PITCH.length - 0.7 : 0.7;
+    ballY = PITCH.width / 2;
+  }
+
+  const bx = px(ballX);
+  const by = py(ballY);
   ctx.beginPath();
   ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
   ctx.fillStyle = "#ffffff";
@@ -186,6 +198,22 @@ function drawFrame() {
   ctx.strokeStyle = "rgba(0,0,0,0.6)";
   ctx.lineWidth = 1.2;
   ctx.stroke();
+
+  if (recent) {
+    const scorer = match.players.find((p) => p.side === recent.side && p.num === recent.player);
+    const label = `GOAL  ${Math.floor(recent.t / 60)}'  ${recent.player} ${scorer ? initials(scorer.name) : ""}`;
+
+    ctx.fillStyle = "rgba(9, 20, 13, 0.82)";
+    ctx.fillRect(canvas.width / 2 - 130, 18, 260, 38);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 15px Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, canvas.width / 2, 38);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 }
 
 function formatClock(seconds) {
@@ -199,6 +227,16 @@ function updateHud() {
   if (!match) return;
   const seconds = frame / match.frameRate;
   ui.clock.textContent = formatClock(seconds);
+
+  let home = 0;
+  let away = 0;
+  for (const event of match.events) {
+    if (event.type !== "goal" || event.t > seconds) continue;
+    if (event.side === "home") home += 1;
+    else away += 1;
+  }
+  ui.homeScore.textContent = String(home);
+  ui.awayScore.textContent = String(away);
   ui.scrub.value = String(Math.round((frame / (match.frames.length - 1)) * 1000));
 
 }
@@ -231,7 +269,7 @@ function renderGoals() {
     chip.innerHTML = `<span class="minute">${minute}'</span><span class="num">${goal.player}</span><span class="who">${player ? initials(player.name) : ""}</span>`;
     chip.title = `Jump to ${minute}:${String(Math.floor(goal.t % 60)).padStart(2, "0")}`;
     chip.addEventListener("click", () => {
-      frame = Math.min(goal.t * match.frameRate, match.frames.length - 1);
+      frame = Math.max(0, Math.min((goal.t + 0.2) * match.frameRate, match.frames.length - 1));
       playing = false;
       ui.play.textContent = "Play";
       for (const other of ui.goals.querySelectorAll(".goal-chip")) other.classList.remove("active");
@@ -515,8 +553,8 @@ function boot() {
   playing = true;
   ui.play.textContent = "Pause";
 
-  ui.homeScore.textContent = String(match.score.home);
-  ui.awayScore.textContent = String(match.score.away);
+  ui.homeScore.textContent = "0";
+  ui.awayScore.textContent = "0";
   ui.homeName.textContent = home.name;
   ui.homeCol.textContent = home.name;
   ui.awayCol.textContent = away.name;

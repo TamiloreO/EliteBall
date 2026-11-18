@@ -50,6 +50,38 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 main { max-width: 1180px; margin: 0 auto; padding: 22px 30px 56px; }
 
+.setup {
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  margin-bottom: 6px;
+}
+.setup-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 16px; }
+.setup-head h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; margin: 0 0 2px; }
+.setup-head p { margin: 0; font-size: 11px; color: var(--muted); }
+.setup-body { border-top: 1px solid var(--line); padding: 14px 16px 16px; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.team-editor h3 { margin: 0; font-size: 15px; }
+.editor-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.editor-head span { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.tactics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-bottom: 10px; }
+.tactics label { display: grid; grid-template-columns: 42px 1fr 26px; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.tactics input { width: 100%; accent-color: var(--home); }
+.tactics span { font-family: var(--mono); font-size: 10px; color: var(--ink); text-align: right; }
+.table-wrap { overflow-x: auto; }
+table.edit { border-collapse: collapse; width: 100%; font-size: 11px; }
+table.edit th { font-size: 8px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; font-weight: 500; padding: 2px 2px 4px; text-align: center; }
+table.edit th:nth-child(2) { text-align: left; }
+table.edit td { border-top: 1px solid #e6eae1; padding: 2px; text-align: center; }
+table.edit td.num { font-family: var(--mono); color: var(--muted); }
+table.edit td.who { text-align: left; white-space: nowrap; }
+table.edit td.who b { font-size: 10px; }
+table.edit td.who span { font-family: var(--mono); font-size: 8px; color: var(--muted); }
+table.edit input {
+  width: 34px; padding: 2px 1px; border: 1px solid var(--line); border-radius: 2px;
+  font-family: var(--mono); font-size: 10px; text-align: center; color: var(--ink); background: #fff;
+}
+table.edit input:focus { outline: 1px solid var(--home); border-color: var(--home); }
+.setup-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+
 .scoreline {
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px;
   padding: 6px 4px 16px;

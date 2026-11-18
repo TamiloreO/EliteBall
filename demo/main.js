@@ -22,6 +22,9 @@ const ui = {
   finePrint: document.getElementById("fine-print"),
   facts: document.getElementById("facts"),
   goals: document.getElementById("goals"),
+  setupBody: document.getElementById("setup-body"),
+  setupToggle: document.getElementById("setup-toggle"),
+  shuffle: document.getElementById("shuffle"),
   homeSheet: document.getElementById("home-sheet"),
   awaySheet: document.getElementById("away-sheet"),
 };
@@ -32,6 +35,7 @@ const view = { scale: 1, ox: 0, oy: 0 };
 
 let match = null;
 let squadPack = null;
+let teams = null;
 let frame = 0;
 let playing = true;
 let speed = 4;
@@ -326,10 +330,185 @@ function teamFromPack(side, pack) {
   };
 }
 
+let defaultSetup = null;
+
+function snapshotSetup() {
+  if (!teams) return null;
+  const copy = {};
+  for (const side of ["home", "away"]) {
+    copy[side] = {
+      tactics: { ...teams[side].tactics },
+      players: teams[side].players.map((p) => ({ num: p.num, attrs: { ...p.attrs }, condition: { ...p.condition } })),
+    };
+  }
+  return copy;
+}
+
+function resetSetup() {
+  if (!defaultSetup || !teams) return;
+  for (const side of ["home", "away"]) {
+    const team = teams[side];
+    Object.assign(team.tactics, defaultSetup[side].tactics);
+    for (const player of team.players) {
+      const base = defaultSetup[side].players.find((p) => p.num === player.num);
+      if (base) {
+        Object.assign(player.attrs, base.attrs);
+        Object.assign(player.condition, base.condition);
+      }
+    }
+  }
+}
+
+function buildTeams() {
+  return squadPack
+    ? { home: teamFromPack("home", squadPack.home), away: teamFromPack("away", squadPack.away) }
+    : { home: makeTeam("Rovers", "pressers", "4-3-3"), away: makeTeam("Athletic", "blockers", "4-4-2") };
+}
+
+const SETUP_KEY = "eliteball.setup.v1";
+const EDIT_ATTRS = [
+  ["pace", "PAC", "Top speed. 50 is average, 99 is elite. Each 10 points adds about 0.36 m/s."],
+  ["passing", "PAS", "Pass completion. Each 10 points adds about 1.1 points of completion under pressure."],
+  ["dribbling", "DRI", "Carry distance under pressure. Each 10 points adds about 3 percent."],
+  ["shooting", "SHO", "Shot frequency and conversion. Each 10 points adds about 0.03 to the conversion multiplier."],
+  ["pressing", "PRS", "Closing down. Each 10 points adds about 0.3 m to the press radius."],
+  ["positioning", "POS", "Quality of positions taken. Each 10 points adds about 1.2 percent to expected goals."],
+  ["stamina", "STA", "Resistance to fatigue. Each 10 points makes tiredness about 8 percent slower."],
+];
+
+const EDIT_CONDITIONS = [
+  ["fitness", "FIT", "Fitness. 100 is fully fit; 70 costs about 5 percent of top speed."],
+  ["sharpness", "SHP", "Touch. Each 10 points adds about 0.8 points of pass completion."],
+  ["morale", "MOR", "Confidence. Each 0.1 adds about 1.2 percent to conversion."],
+  ["distraction", "DIS", "Off-field noise. Each 0.1 costs about 0.4 points of pass completion."],
+];
+
+function saveSetup() {
+  if (!teams) return;
+  try {
+    const pack = {};
+    for (const side of ["home", "away"]) {
+      pack[side] = {
+        name: teams[side].name,
+        tactics: { ...teams[side].tactics },
+        players: teams[side].players.map((p) => ({ num: p.num, attrs: { ...p.attrs }, condition: { ...p.condition } })),
+      };
+    }
+    localStorage.setItem(SETUP_KEY, JSON.stringify(pack));
+  } catch {
+    // Storage can be unavailable; the editor still works for this session.
+  }
+}
+
+function loadSetup() {
+  if (!teams) return;
+  try {
+    const raw = localStorage.getItem(SETUP_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    for (const side of ["home", "away"]) {
+      const team = teams[side];
+      const entry = saved[side];
+      if (!entry || entry.name !== team.name) continue;
+      Object.assign(team.tactics, entry.tactics ?? {});
+      for (const player of team.players) {
+        const match = (entry.players ?? []).find((p) => p.num === player.num);
+        if (match) {
+          Object.assign(player.attrs, match.attrs ?? {});
+          Object.assign(player.condition, match.condition ?? {});
+        }
+      }
+    }
+  } catch {
+    // A corrupt saved setup should not stop the demo.
+  }
+}
+
+function onSetupInput(event) {
+  const input = event.target;
+  const team = teams[input.dataset.side];
+  if (!team) return;
+
+  if (input.dataset.tactic) {
+    team.tactics[input.dataset.tactic] = Math.max(0, Math.min(1, Number(input.value) / 100));
+    const value = input.parentElement.querySelector("span");
+    if (value) value.textContent = input.value;
+  } else {
+    const player = team.players[Number(input.dataset.index)];
+    if (!player) return;
+    if (input.dataset.condition) {
+      const key = input.dataset.condition;
+      const raw = Number(input.value) / 100;
+      player.condition[key] = key === "morale" ? Math.max(-1, Math.min(1, raw)) : Math.max(0, Math.min(1, raw));
+    } else if (input.dataset.attr) {
+      player.attrs[input.dataset.attr] = Math.max(1, Math.min(99, Number(input.value) || 1));
+    }
+  }
+  saveSetup();
+}
+
+function renderSetup() {
+  if (!teams || !ui.setupBody) return;
+
+  const editors = ["home", "away"].map((side) => {
+    const team = teams[side];
+    const el = document.createElement("div");
+    el.className = "team-editor";
+
+    const tactics = [
+      ["lineHeight", "Line"], ["press", "Press"], ["width", "Width"], ["tempo", "Tempo"],
+    ].map(([key, label]) => {
+      const value = Math.round((team.tactics[key] ?? 0.5) * 100);
+      const tip = {
+        lineHeight: "How high the back line holds. Higher squeezes the pitch and risks space behind.",
+        press: "How far players close down. Higher wins the ball sooner and tires the squad faster.",
+        width: "How wide the team stretches in possession.",
+        tempo: "Speed of decisions. Higher means more passes and shots, and more turnovers.",
+      }[key];
+      return `<label title="${tip}">${label}<input type="range" min="0" max="100" value="${value}" data-side="${side}" data-tactic="${key}"><span>${value}</span></label>`;
+    }).join("");
+
+    const rows = team.players.map((player, index) => `
+      <tr>
+        <td class="num">${player.num}</td>
+        <td class="who"><b>${initials(player.name)}</b> <span>${player.role}</span></td>
+        ${EDIT_ATTRS.map(([key, , tip]) => `<td><input type="number" min="1" max="99" title="${tip}" value="${player.attrs[key]}" data-side="${side}" data-index="${index}" data-attr="${key}"></td>`).join("")}
+        ${EDIT_CONDITIONS.map(([key, , tip]) => {
+          const raw = key === "morale" ? player.condition[key] * 100 : player.condition[key] * 100;
+          const min = key === "morale" ? -100 : key === "fitness" ? 30 : 0;
+          return `<td><input type="number" min="${min}" max="100" title="${tip}" value="${Math.round(raw)}" data-side="${side}" data-index="${index}" data-condition="${key}"></td>`;
+        }).join("")}
+      </tr>`).join("");
+
+    el.innerHTML = `
+      <div class="editor-head"><h3>${team.name}</h3><span>${team.formation}</span></div>
+      <div class="tactics">${tactics}</div>
+      <div class="table-wrap">
+        <table class="edit">
+          <thead><tr><th>#</th><th>Player</th>${EDIT_ATTRS.map(([, label, tip]) => `<th title="${tip}">${label}</th>`).join("")}${EDIT_CONDITIONS.map(([, label, tip]) => `<th title="${tip}">${label}</th>`).join("")}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    return el;
+  });
+
+  const grid = document.createElement("div");
+  grid.className = "setup-grid";
+  grid.append(...editors);
+
+  const actions = document.createElement("div");
+  actions.className = "setup-actions";
+  actions.innerHTML = '<button data-reset>Reset to defaults</button><button data-run class="primary">Run with these values</button>';
+
+  ui.setupBody.replaceChildren(grid, actions);
+  ui.setupBody.querySelectorAll("input").forEach((input) => input.addEventListener("input", onSetupInput));
+}
+
 function boot() {
   const seed = Number(ui.seed.value) || 1;
-  const home = squadPack ? teamFromPack("home", squadPack.home) : makeTeam("Rovers", "pressers", "4-3-3");
-  const away = squadPack ? teamFromPack("away", squadPack.away) : makeTeam("Athletic", "blockers", "4-4-2");
+  if (!teams) teams = buildTeams();
+  const home = teams.home;
+  const away = teams.away;
 
   match = simulate({ home, away, seed, duration: 90 * 60 });
   frame = 0;
@@ -385,6 +564,28 @@ ui.simulate.addEventListener("click", () => {
   boot();
 });
 
+ui.setupToggle.addEventListener("click", () => {
+  const hidden = ui.setupBody.hasAttribute("hidden");
+  if (hidden) ui.setupBody.removeAttribute("hidden");
+  else ui.setupBody.setAttribute("hidden", "");
+  ui.setupToggle.textContent = hidden ? "Hide values" : "Edit values";
+});
+
+ui.setupBody.addEventListener("click", (event) => {
+  if (event.target.matches("[data-run]")) boot();
+  if (event.target.matches("[data-reset]")) {
+    resetSetup();
+    renderSetup();
+    saveSetup();
+    boot();
+  }
+});
+
+ui.shuffle.addEventListener("click", () => {
+  ui.seed.value = String(Math.floor(Math.random() * 9999) + 1);
+  boot();
+});
+
 ui.scrub.addEventListener("input", () => {
   if (!match) return;
   frame = (Number(ui.scrub.value) / 1000) * (match.frames.length - 1);
@@ -406,8 +607,12 @@ async function start() {
   } catch {
     // No local pack: the invented squads are the default.
   }
+  teams = buildTeams();
+  defaultSetup = snapshotSetup();
+  loadSetup();
   fit();
   boot();
+  renderSetup();
   requestAnimationFrame(tick);
 }
 

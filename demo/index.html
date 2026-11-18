@@ -14,13 +14,25 @@
         <span class="tagline">match simulator</span>
       </div>
       <div class="controls">
-        <label for="seed">Seed</label>
+        <label for="seed">Variation</label>
         <input id="seed" type="number" min="1" max="9999" value="7" />
+        <button id="shuffle" title="Draw a new variation">New</button>
         <button id="simulate" class="primary">Simulate match</button>
       </div>
     </header>
 
     <main>
+      <section class="setup">
+        <div class="setup-head">
+          <div>
+            <h2>Match setup</h2>
+            <p>Set every value yourself. The simulation uses exactly what you enter.</p>
+          </div>
+          <button id="setup-toggle">Edit values</button>
+        </div>
+        <div class="setup-body" id="setup-body" hidden></div>
+      </section>
+
       <section class="scoreline" aria-label="Score">
         <div class="side home">
           <span class="dot"></span>

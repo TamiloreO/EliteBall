@@ -124,14 +124,14 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
     }
 
     // Carry: the carrier drives forward and the ball goes with them.
-    const carry = rng.range(4, 12) * dir;
+    const carry = rng.range(4, 12) * (0.85 + carrier.attrs.dribbling / 330) * dir;
     state.ball.x = clamp(state.ball.x + carry, 2, PITCH.length - 2);
     state.ball.y = clamp(state.ball.y + rng.range(-3, 3), 2, PITCH.width - 2);
     state.ball.target = { x: state.ball.x, y: state.ball.y };
   }
 
   function shoot(t, side, shooter) {
-    const xg = xgAt(state.ball.x, state.ball.y, side);
+    const xg = xgAt(state.ball.x, state.ball.y, side) * (0.94 + shooter.attrs.positioning / 825);
     const conversion = clamp(xg * (0.5 + shooter.attrs.shooting / 350) * shotFactor(shooter), 0.01, 0.9);
     stats[side].shots += 1;
     stats[side].xg += xg;
@@ -186,7 +186,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
         }
       } else {
         const gap = distance(p.pos, state.ball);
-        const pressRadius = 6 + tactics.press * 12;
+        const pressRadius = 6 + tactics.press * 12 + (p.attrs.pressing / 99) * 3;
         if (gap < pressRadius) {
           tx = state.ball.x + 1.4 * attack;
           ty = state.ball.y + jockey;
@@ -209,7 +209,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
       p.pos.x = clamp(p.pos.x + (dx / len) * step, 0.4, PITCH.length - 0.4);
       p.pos.y = clamp(p.pos.y + (dy / len) * step, 0.4, PITCH.width - 0.4);
       stats[p.side].distance += distance(before, p.pos);
-      p.stamina = clamp(p.stamina - dt * 0.00005 * (1 + tactics.press), 0.6, 1);
+      p.stamina = clamp(p.stamina - dt * 0.00005 * (1 + tactics.press) * (1.4 - p.attrs.stamina / 99 * 0.8), 0.6, 1);
     }
   }
 

@@ -36,6 +36,12 @@ Three condition values feed the engine directly: fitness scales top speed, sharp
 
 The engine is deliberately a possession chain rather than a physics simulation. A continuous ball model was built first and abandoned: it deadlocked repeatedly, with the ball frozen at one player's feet and no shots for the rest of the match. A discrete model cannot fail that way, and its rates are directly calibratable.
 
+## Setting the values
+
+Open **Edit values** above the pitch and every player becomes editable: pace, passing, dribbling, shooting, pressing, positioning and stamina, plus fitness, sharpness, morale and distraction, and both teams' line height, pressing, width and tempo. Each field carries a tooltip that states what a change means in match terms, for example ten points of pace is about 0.36 metres per second, and ten points of passing is about 1.1 points of pass completion.
+
+The values start at sensible defaults for each role, edits are saved in the browser, and **Reset to defaults** restores the starting set. **Variation** is not a prediction: it fixes the random draws so the same inputs replay the same match. Change a value and the match changes; press New for a different set of draws from the same inputs.
+
 ## Calibration
 
 Measured over six seeds, ninety minutes each, with the default squads.

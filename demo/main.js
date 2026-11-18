@@ -204,7 +204,7 @@ function drawFrame() {
   );
 
   if (!recent && restart) {
-    const text = restart.kind === "kickoff" ? "KICK OFF" : "GOAL KICK";
+    const text = restart.kind === "kickoff" ? "KICK OFF" : restart.kind === "secondhalf" ? "SECOND HALF" : "GOAL KICK";
     ctx.fillStyle = "rgba(9, 20, 13, 0.82)";
     ctx.fillRect(bx - 46, by - 34, 92, 20);
     ctx.fillStyle = "#ffffff";

@@ -125,8 +125,8 @@ export function goalFor(side) {
 
 // A simple expected-goals curve. Central and close is worth more than wide and
 // far, and the shape is monotonic in distance, which the tests check.
-export function xgAt(x, y, side) {
-  const goal = goalFor(side);
+export function xgAt(x, y, side, dir = side === "home" ? 1 : -1) {
+  const goal = { x: dir > 0 ? PITCH.length : 0, y: PITCH.width / 2 };
   const dx = Math.abs(goal.x - x);
   const dy = Math.abs(goal.y - y);
   const distance = Math.hypot(dx, dy);

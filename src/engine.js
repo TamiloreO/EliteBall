@@ -71,12 +71,19 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
     record(t, kind, toSide, state.carrier);
   }
 
+  let swapped = false;
+
   function attackDir(side) {
-    return side === "home" ? 1 : -1;
+    const dir = side === "home" ? 1 : -1;
+    return swapped ? -dir : dir;
+  }
+
+  function goalPoint(side) {
+    return { x: attackDir(side) > 0 ? PITCH.length : 0, y: PITCH.width / 2 };
   }
 
   function inFinalThird(side) {
-    const goal = goalFor(side);
+    const goal = goalPoint(side);
     return distance(state.ball, goal) < 32;
   }
 
@@ -88,7 +95,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
 
     // Shooting is a zone decision, and the further in, the likelier it is.
     if (inFinalThird(side)) {
-      const gap = distance(state.ball, goalFor(side));
+      const gap = distance(state.ball, goalPoint(side));
       const shootChance = gap < 18 ? 0.05 : 0.02;
       if (rng.chance(shootChance * (0.7 + carrier.attrs.shooting / 200))) {
         shoot(t, side, carrier);
@@ -131,7 +138,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
   }
 
   function shoot(t, side, shooter) {
-    const xg = xgAt(state.ball.x, state.ball.y, side) * (0.94 + shooter.attrs.positioning / 825);
+    const xg = xgAt(state.ball.x, state.ball.y, side, attackDir(side)) * (0.94 + shooter.attrs.positioning / 825);
     const conversion = clamp(xg * (0.5 + shooter.attrs.shooting / 350) * shotFactor(shooter), 0.01, 0.9);
     stats[side].shots += 1;
     stats[side].xg += xg;
@@ -150,7 +157,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
     const other = side === "home" ? "away" : "home";
     record(t, "restart", other, null, { kind: "goalkick" });
     state.ball.side = other;
-    state.ball.x = other === "home" ? 5.5 : PITCH.length - 5.5;
+    state.ball.x = attackDir(other) > 0 ? 5.5 : PITCH.length - 5.5;
     state.ball.y = PITCH.width / 2;
     state.ball.target = { x: state.ball.x, y: state.ball.y };
     state.carrier = bySide[other].find((p) => p.role === "GK");
@@ -170,7 +177,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
       let ty;
 
       if (p.role === "GK") {
-        tx = p.side === "home" ? 3 : PITCH.length - 3;
+        tx = attackDir(p.side) > 0 ? 3 : PITCH.length - 3;
         ty = clamp(PITCH.width / 2 + ballShift * 0.35 + jockey * 0.6, 26, 42);
       } else if (p === state.carrier) {
         tx = state.ball.x + 1.2 * attack + sway * 0.3;
@@ -220,6 +227,25 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
 
   for (let tick = 0; tick < totalTicks; tick += 1) {
     clock = tick * DT;
+
+    // Teams change ends at half time: bases and positions mirror, and the
+    // side that did not kick off starts the second half.
+    if (!swapped && clock >= duration / 2) {
+      swapped = true;
+      for (const p of players) {
+        p.base = { x: PITCH.length - p.base.x, y: PITCH.width - p.base.y };
+        p.pos = { x: PITCH.length - p.pos.x, y: PITCH.width - p.pos.y };
+      }
+      state.ball = {
+        x: PITCH.length / 2,
+        y: PITCH.width / 2,
+        side: "away",
+        target: { x: PITCH.length / 2, y: PITCH.width / 2 },
+      };
+      state.carrier = nearest(state.ball, bySide.away);
+      record(clock, "restart", "away", null, { kind: "secondhalf" });
+    }
+
     const side = state.ball.side;
 
     // Ball travels toward its target, and the nearest player takes it on.

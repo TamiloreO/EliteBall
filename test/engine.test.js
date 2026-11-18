@@ -71,7 +71,7 @@ test("every shot has an xG between zero and one", () => {
 test("a full match runs the right number of frames", () => {
   const match = simulate({ ...teams(), seed: 2, duration: 90 * 60 });
   assert.equal(match.frames.length, Math.round((90 * 60) / DT));
-  assert.equal(match.frameRate, 5);
+  assert.equal(match.frameRate, 10);
 });
 
 test("a full match produces a plausible scoreline", () => {

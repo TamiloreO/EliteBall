@@ -28,7 +28,7 @@ npm test
 
 ## How the model works
 
-The match runs at five frames a second. Every tick, the side in possession may make a decision, with the rate set by tempo. A decision becomes a shot if the ball is in the final third, otherwise a pass or a carry, with the split set by tempo and by the player's attributes.
+The match runs at ten frames a second, interpolated on the canvas so the picture moves at screen rate rather than in steps. Every tick, the side in possession may make a decision, with the rate set by tempo. A decision becomes a shot if the ball is in the final third, otherwise a pass or a carry, with the split set by tempo and by the player's attributes.
 
 A pass succeeds on a probability built from distance, pressure, the passer's passing value and their sharpness and distraction. A failed pass is a turnover. A shot is worth an expected-goals figure from its distance and angle, and converts at a rate scaled by the shooter's finishing and morale. A save restarts play from deep; a goal restarts from the centre.
 

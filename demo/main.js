@@ -119,21 +119,26 @@ function drawFrame() {
   drawPitch();
   if (!match) return;
 
-  const index = Math.max(0, Math.min(match.frames.length - 1, Math.floor(frame)));
-  const f = match.frames[index];
+  const last = match.frames.length - 1;
+  const i0 = Math.max(0, Math.min(last, Math.floor(frame)));
+  const i1 = Math.min(i0 + 1, last);
+  const t = Math.max(0, Math.min(1, frame - i0));
+  const a = match.frames[i0];
+  const b = match.frames[i1];
+  const mix = (u, v) => u + (v - u) * t;
   const count = match.players.length;
 
   for (let i = 0; i < count; i += 1) {
     const player = match.players[i];
-    const x = px(f[2 + i * 2]);
-    const y = py(f[3 + i * 2]);
+    const x = px(mix(a[2 + i * 2], b[2 + i * 2]));
+    const y = py(mix(a[3 + i * 2], b[3 + i * 2]));
     const colour = COLORS[player.side];
 
-    // A short trail from the previous frame gives a sense of direction.
-    const prev = match.frames[Math.max(0, index - 3)];
+    // A short trail from the recent past gives a sense of direction.
+    const prev = match.frames[Math.max(0, i0 - 4)];
     if (prev) {
       ctx.strokeStyle = colour;
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.16;
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(px(prev[2 + i * 2]), py(prev[3 + i * 2]));
@@ -167,8 +172,8 @@ function drawFrame() {
     }
   }
 
-  const bx = px(f[0]);
-  const by = py(f[1]);
+  const bx = px(mix(a[0], b[0]));
+  const by = py(mix(a[1], b[1]));
   ctx.beginPath();
   ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
   ctx.fillStyle = "#ffffff";

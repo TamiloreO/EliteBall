@@ -6,7 +6,7 @@ import { PITCH, goalFor, xgAt, distance, clamp, speedFactor, passFactor, shotFac
 // That keeps the event counts plausible and makes the model impossible to
 // deadlock, which a continuous ball simulation kept doing.
 
-export const DT = 0.2;
+export const DT = 0.1;
 export const MATCH_SECONDS = 90 * 60;
 
 const DECISION_RATE = 0.22;
@@ -155,43 +155,61 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
   }
 
   function movePlayers(dt) {
-    for (const p of players) {
+    for (let index = 0; index < players.length; index += 1) {
+      const p = players[index];
       const tactics = teams[p.side].tactics;
       const attack = attackDir(p.side);
+      const inPossession = p.side === state.ball.side;
+      const ballShift = state.ball.y - PITCH.width / 2;
+      const advance = (state.ball.x - PITCH.length / 2) * 0.35;
+      const sway = Math.sin(clock * 0.9 + index * 1.7) * 1.6;
+      const jockey = Math.cos(clock * 1.25 + index * 2.3) * 1.2;
       let tx;
       let ty;
 
       if (p.role === "GK") {
         tx = p.side === "home" ? 3 : PITCH.length - 3;
-        ty = clamp(PITCH.width / 2 + (state.ball.y - PITCH.width / 2) * 0.35, 26, 42);
+        ty = clamp(PITCH.width / 2 + ballShift * 0.35 + jockey * 0.6, 26, 42);
       } else if (p === state.carrier) {
-        tx = state.ball.x + 1.5 * attack;
-        ty = state.ball.y;
+        tx = state.ball.x + 1.2 * attack + sway * 0.3;
+        ty = state.ball.y + jockey * 0.3;
+      } else if (inPossession) {
+        if (p.role === "FW") {
+          tx = p.base.x + advance * 1.15 + 6 * attack + sway;
+          ty = p.base.y + ballShift * 0.22 + jockey * 2.2;
+        } else if (p.role === "MF") {
+          tx = p.base.x + advance * 0.85 - 2 * attack + sway * 0.8;
+          ty = p.base.y + ballShift * 0.32 + jockey * 1.4;
+        } else {
+          tx = p.base.x + advance * 0.55 + (tactics.lineHeight - 0.5) * 10 * attack + sway * 0.6;
+          ty = p.base.y + ballShift * 0.18 + jockey;
+        }
       } else {
-        tx = p.base.x + (state.ball.x - PITCH.length / 2) * 0.28;
-        ty = PITCH.width / 2 + (p.base.y - PITCH.width / 2) * (0.75 + tactics.width * 0.5) + (state.ball.y - PITCH.width / 2) * 0.15;
-        if (p.side === state.ball.side && p.role === "FW") tx += 8 * attack;
-        if (p.side !== state.ball.side) {
-          const press = 4 + tactics.press * 10;
-          if (distance(p.pos, state.ball) < press) {
-            tx = state.ball.x;
-            ty = state.ball.y;
-          }
-          if (p.role === "DF") tx += (tactics.lineHeight - 0.5) * 12 * attack;
+        const gap = distance(p.pos, state.ball);
+        const pressRadius = 6 + tactics.press * 12;
+        if (gap < pressRadius) {
+          tx = state.ball.x + 1.4 * attack;
+          ty = state.ball.y + jockey;
+        } else {
+          tx = p.base.x + (state.ball.x - p.base.x) * 0.22 + sway;
+          ty = p.base.y + (state.ball.y - p.base.y) * 0.3 + jockey;
+          if (p.role === "DF") tx += (tactics.lineHeight - 0.5) * 10 * attack;
         }
       }
 
       const dx = tx - p.pos.x;
       const dy = ty - p.pos.y;
       const len = Math.hypot(dx, dy);
-      if (!Number.isFinite(len) || len < 0.05) continue;
-      const speed = (4.2 + (p.attrs.pace / 99) * 4) * (0.7 + 0.3 * p.stamina) * speedFactor(p) * (p.role === "GK" ? 0.5 : 1);
+      if (!Number.isFinite(len) || len < 0.02) continue;
+      const baseSpeed = 3.1 + (p.attrs.pace / 99) * 3.6;
+      const urgency = len > 10 ? 1.35 : len > 5 ? 1.15 : 1;
+      const speed = baseSpeed * urgency * (0.72 + 0.28 * p.stamina) * speedFactor(p) * (p.role === "GK" ? 0.55 : 1);
       const step = Math.min(speed * dt, len);
       const before = { ...p.pos };
       p.pos.x = clamp(p.pos.x + (dx / len) * step, 0.4, PITCH.length - 0.4);
       p.pos.y = clamp(p.pos.y + (dy / len) * step, 0.4, PITCH.width - 0.4);
       stats[p.side].distance += distance(before, p.pos);
-      p.stamina = clamp(p.stamina - dt * 0.000025 * (1 + tactics.press), 0.6, 1);
+      p.stamina = clamp(p.stamina - dt * 0.00005 * (1 + tactics.press), 0.6, 1);
     }
   }
 

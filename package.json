@@ -1,0 +1,12 @@
+{
+  "name": "touchline",
+  "version": "0.1.0",
+  "description": "A seeded match simulator driven by assessed player values and team tactics, with a 2D match map.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": ["football", "simulation", "tactics", "canvas", "sports-analytics"],
+  "license": "MIT"
+}

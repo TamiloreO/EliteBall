@@ -140,6 +140,7 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
     if (rng.chance(conversion)) {
       stats[side].goals += 1;
       record(t, "goal", side, shooter, { xg: round(xg) });
+      record(t, "restart", side === "home" ? "away" : "home", null, { kind: "kickoff" });
       state.ball = { x: PITCH.length / 2, y: PITCH.width / 2, side: side === "home" ? "away" : "home", target: { x: PITCH.length / 2, y: PITCH.width / 2 } };
       state.carrier = nearest(state.ball, bySide[state.ball.side]);
       return;
@@ -147,8 +148,9 @@ export function simulate({ home, away, seed = 1, duration = MATCH_SECONDS }) {
 
     // Saved or off target: the defending side restarts from deep.
     const other = side === "home" ? "away" : "home";
+    record(t, "restart", other, null, { kind: "goalkick" });
     state.ball.side = other;
-    state.ball.x = other === "home" ? 8 : PITCH.length - 8;
+    state.ball.x = other === "home" ? 5.5 : PITCH.length - 5.5;
     state.ball.y = PITCH.width / 2;
     state.ball.target = { x: state.ball.x, y: state.ball.y };
     state.carrier = bySide[other].find((p) => p.role === "GK");

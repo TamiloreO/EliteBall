@@ -199,6 +199,21 @@ function drawFrame() {
   ctx.lineWidth = 1.2;
   ctx.stroke();
 
+  const restart = match.events.find(
+    (event) => event.type === "restart" && seconds >= event.t && seconds <= event.t + 1.4,
+  );
+
+  if (!recent && restart) {
+    const text = restart.kind === "kickoff" ? "KICK OFF" : "GOAL KICK";
+    ctx.fillStyle = "rgba(9, 20, 13, 0.82)";
+    ctx.fillRect(bx - 46, by - 34, 92, 20);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 10px Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, bx, by - 24);
+  }
+
   if (recent) {
     const scorer = match.players.find((p) => p.side === recent.side && p.num === recent.player);
     const label = `GOAL  ${Math.floor(recent.t / 60)}'  ${recent.player} ${scorer ? initials(scorer.name) : ""}`;

@@ -1,5 +1,5 @@
 import { simulate } from "../src/engine.js";
-import { makeTeam, PITCH } from "../src/model.js";
+import { makeTeam, PITCH, FORMATIONS } from "../src/model.js";
 
 const canvas = document.getElementById("pitch");
 const ctx = canvas.getContext("2d");
@@ -17,6 +17,9 @@ const ui = {
   seed: document.getElementById("seed"),
   simulate: document.getElementById("simulate"),
   statsBody: document.getElementById("stats-body"),
+  homeCol: document.getElementById("home-col"),
+  awayCol: document.getElementById("away-col"),
+  finePrint: document.getElementById("fine-print"),
   facts: document.getElementById("facts"),
   homeSheet: document.getElementById("home-sheet"),
   awaySheet: document.getElementById("away-sheet"),
@@ -27,6 +30,7 @@ const MARGIN = 4;
 const view = { scale: 1, ox: 0, oy: 0 };
 
 let match = null;
+let squadPack = null;
 let frame = 0;
 let playing = true;
 let speed = 4;
@@ -151,6 +155,16 @@ function drawFrame() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(String(player.num), x, y + 0.5);
+
+    // Initials only where there is room for them to stay legible.
+    if (canvas.clientWidth >= 760) {
+      ctx.font = "600 8px Helvetica, Arial, sans-serif";
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = "rgba(9, 26, 14, 0.75)";
+      ctx.strokeText(initials(player.name), x, y + 18);
+      ctx.fillStyle = "#f4f7ef";
+      ctx.fillText(initials(player.name), x, y + 18);
+    }
   }
 
   const bx = px(f[0]);
@@ -250,10 +264,30 @@ function sheet(list, players) {
   }
 }
 
+function teamFromPack(side, pack) {
+  const formation = pack.formation ?? "4-3-3";
+  const shape = FORMATIONS[formation];
+  return {
+    name: pack.name,
+    formation,
+    tactics: pack.tactics,
+    players: pack.players.map((p, index) => ({
+      id: `${side}-${p.num}`,
+      num: p.num,
+      name: p.name,
+      role: shape[index][0],
+      attrs: p.attrs,
+      condition: p.condition ?? { fitness: 0.9, sharpness: 0.82, morale: 0.05, distraction: 0.05 },
+      rumour: null,
+      base: { x: shape[index][1] * PITCH.length, y: shape[index][2] * PITCH.width },
+    })),
+  };
+}
+
 function boot() {
   const seed = Number(ui.seed.value) || 1;
-  const home = makeTeam("Rovers", "pressers", "4-3-3");
-  const away = makeTeam("Athletic", "blockers", "4-4-2");
+  const home = squadPack ? teamFromPack("home", squadPack.home) : makeTeam("Rovers", "pressers", "4-3-3");
+  const away = squadPack ? teamFromPack("away", squadPack.away) : makeTeam("Athletic", "blockers", "4-4-2");
 
   match = simulate({ home, away, seed, duration: 90 * 60 });
   frame = 0;
@@ -263,6 +297,11 @@ function boot() {
   ui.homeScore.textContent = String(match.score.home);
   ui.awayScore.textContent = String(match.score.away);
   ui.homeName.textContent = home.name;
+  ui.homeCol.textContent = home.name;
+  ui.awayCol.textContent = away.name;
+  if (squadPack && ui.finePrint) {
+    ui.finePrint.textContent = "Local squad pack loaded. Real names, numbers and clubs stay on this machine and out of the repository.";
+  }
   ui.awayName.textContent = away.name;
   ui.homeFormation.textContent = home.formation;
   ui.awayFormation.textContent = away.formation;
@@ -317,6 +356,16 @@ for (const button of document.querySelectorAll(".speed")) {
   });
 }
 
-fit();
-boot();
-requestAnimationFrame(tick);
+async function start() {
+  try {
+    const response = await fetch("../data/squads.json", { cache: "no-store" });
+    if (response.ok) squadPack = await response.json();
+  } catch {
+    // No local pack: the invented squads are the default.
+  }
+  fit();
+  boot();
+  requestAnimationFrame(tick);
+}
+
+start();

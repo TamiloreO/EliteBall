@@ -1,4 +1,5 @@
 node_modules/
-data/
+data/*
+!data/README.md
 .DS_Store
 *.log
